@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+
+# Start postgres (if it is not already running).
+pg_data_dir="pg_data"
+
+if [[ ! -d $pg_data_dir ]]; then
+    echo "Creating postgres data"
+    PGDATA="$pg_data_dir" initdb --auth=trust --username=postgres
+fi
+
+
+echo "Starting postgres!"
+
+pg_ctl start -D "$pg_data_dir" -o --unix_socket_directories=/tmp
