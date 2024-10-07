@@ -5,6 +5,8 @@ defmodule TavoroMiniWmsWeb.InventoryController do
 
   alias TavoroMiniWms.Repo
 
+  alias TavoroMiniWms.ErrorJSON
+
   action_fallback TavoroMiniWmsWeb.FallbackController
 
   import Ecto.Query
@@ -29,14 +31,15 @@ defmodule TavoroMiniWmsWeb.InventoryController do
     render(conn, :show, inventory: inventory)
   end
 
-  def update(conn, %{"id" => id, "inventory" => inventory_params}) do
-    inventory = Repo.get(Inventory, id)
-
-    with {:ok, %Inventory{} = inventory} <-
-           Inventory.changeset(inventory, inventory_params) |> Repo.update() do
-      render(conn, :show, inventory: inventory)
-    end
-  end
+#  Maybe we will want this later, but for now, let's have more control on updating.
+#  def update(conn, %{"id" => id, "inventory" => inventory_params}) do
+#    inventory = Repo.get(Inventory, id)
+#
+#    with {:ok, %Inventory{} = inventory} <-
+#           Inventory.changeset(inventory, inventory_params) |> Repo.update() do
+#      render(conn, :show, inventory: inventory)
+#    end
+#  end
 
   def delete(conn, %{"id" => id}) do
     inventory = Repo.get(Inventory, id)
@@ -44,5 +47,55 @@ defmodule TavoroMiniWmsWeb.InventoryController do
     with {:ok, %Inventory{}} <- Repo.delete(inventory) do
       send_resp(conn, :no_content, "")
     end
+  end
+
+  # How to lock DB when doing Repo.update()?
+  def receive(conn, %{"id" => id, "inventory" => inventory_params}) do
+    handle_negative_quantity(conn, inventory_params["quantity"])
+
+    with {:ok, %Inventory{} = inventory} <- modify_inventory(conn, id, inventory_params)
+    do
+      conn
+      |> put_status(:ok)
+      |> render(:show, inventory: inventory)
+    else
+      result -> conn
+                |> put_status(:bad_request)
+                |> render("error.json", %{errors: %{detail: "Error occurred updating inventory"}})
+    end
+  end
+
+  defp handle_negative_quantity(conn, quantity) do
+    if quantity <= 0 do
+      conn
+      |> put_status(:bad_request)
+      |> render("error.json", %{errors: %{detail: "Quantity must be greater than 0"}})
+    end
+  end
+
+  defp modify_inventory(conn, id, inventory_params) do
+    check_params(conn, inventory_params)
+
+    inventory = Repo.get(Inventory, id)
+    inventory_quantity = inventory.quantity + inventory_params["quantity"]
+    updated_inventory = inventory |> Map.put(:quantity, inventory_quantity)
+
+    Inventory.changeset(inventory, Map.from_struct(updated_inventory))
+    |> Repo.update()
+
+    {:ok, updated_inventory}
+  end
+
+  defp check_params(conn, inventory_params) do
+    if inventory_params["quantity"] == 0 do
+      handle_bad_params(conn, "Quantity must be non-zero")
+    end
+  end
+
+  defp handle_bad_params(conn, error_msg) do
+    conn
+    |> put_status(:bad_request)
+    |> put_view(html: TavoroMiniWmsWeb.ErrorHTML, json: TavoroMiniWmsWeb.ErrorJSON)
+    |> render("error.json", %{errors: %{detail: error_msg}})
   end
 end

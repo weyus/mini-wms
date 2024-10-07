@@ -29,6 +29,12 @@ defmodule TavoroMiniWmsWeb.Router do
     put "/locations/:id", LocationController, :update
     post "/locations", LocationController, :create
     delete "/locations/:id", LocationController, :delete
+
+    get "/inventories", InventoryController, :index
+    get "/inventories/:id", InventoryController, :show
+    put "/inventories/:id", InventoryController, :receive
+    post "/inventories", InventoryController, :create
+    delete "/inventories/:id", InventoryController, :delete
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
@@ -48,10 +54,10 @@ defmodule TavoroMiniWmsWeb.Router do
     end
   end
 
-  scope "/" do
-    forward "/", ReverseProxyPlug,
-      upstream: "http://localhost:5173",
-      error_callback: &TavoroMiniWmsWeb.reverse_proxy_error_callback/1,
-      response_mode: :buffer
-  end
+#  scope "/" do
+#    forward "/", ReverseProxyPlug,
+#      upstream: "http://localhost:5173",
+#      error_callback: &TavoroMiniWmsWeb.reverse_proxy_error_callback/1,
+#      response_mode: :buffer
+#  end
 end

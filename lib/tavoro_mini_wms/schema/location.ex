@@ -2,10 +2,14 @@ defmodule TavoroMiniWms.Location do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias TavoroMiniWms.Inventory
+
   schema "locations" do
     field :name, :string
 
     timestamps()
+
+    has_many :inventories, Inventory
   end
 
   def create_changeset(attrs) do

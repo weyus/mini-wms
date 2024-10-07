@@ -9,7 +9,7 @@ defmodule TavoroMiniWmsWeb.InventoryJSON do
   end
 
   @doc """
-  Renders a single location.
+  Renders a single inventory.
   """
   def show(%{inventory: inventory}) do
     %{data: data(inventory)}
