@@ -32,7 +32,10 @@ defmodule TavoroMiniWmsWeb.Router do
 
     get "/inventories", InventoryController, :index
     get "/inventories/:id", InventoryController, :show
-    put "/inventories/:id", InventoryController, :receive
+    put "/inventories/receive/:id", InventoryController, :receive
+
+    # WG: Just wanted to try it with request params instead of body params
+    put "/inventories/transfer/:from_location_id/:to_location_id/:product_id/:quantity", InventoryController, :transfer
     post "/inventories", InventoryController, :create
     delete "/inventories/:id", InventoryController, :delete
   end
