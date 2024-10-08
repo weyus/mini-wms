@@ -49,6 +49,12 @@ defmodule TavoroMiniWmsWeb.InventoryController do
 
   # This will receive a positive quantity of product into a location
   #
+  # Assumptions:
+  # 1. The inventory record exists
+  #
+  # Potential improvements:
+  # 1. Allow for creation of a new inventory record if it doesn't exist (upsert - https://hexdocs.pm/ecto/constraints-and-upserts.html#upserts)
+  #
   # @param conn Phoenix connection
   # @param params Map of: id, inventory
   # @return updated inventory at the to location
