@@ -58,15 +58,11 @@ defmodule TavoroMiniWmsWeb.InventoryController do
         |> render(:show, inventory: inventory)
       else
         _err ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{error: "Attempt to receive inventory failed"})
+        handle_error(conn, "Attempt to receive inventory failed")
       end
     else
       {:error, error_msg} ->
-      conn
-      |> put_status(:bad_request)
-      |> json(%{error: error_msg})
+      handle_error(conn, error_msg)
     end
   end
 
@@ -95,9 +91,7 @@ defmodule TavoroMiniWmsWeb.InventoryController do
       end
     else
       {:error, error_msg} ->
-      conn
-      |> put_status(:bad_request)
-      |> json(%{error: error_msg})
+      handle_error(conn, error_msg)
     end
   end
 
@@ -136,5 +130,11 @@ defmodule TavoroMiniWmsWeb.InventoryController do
     |> Repo.update()
 
     {:ok, updated_inventory}
+  end
+
+  defp handle_error(conn, error_msg) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: error_msg})
   end
 end
