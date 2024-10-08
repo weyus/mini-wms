@@ -15,6 +15,9 @@ defmodule TavoroMiniWmsWeb.InventoryControllerTest do
   @receive_attrs %{
     quantity: 3
   }
+  @bad_attrs %{
+    quantity: -3
+  }
 
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
@@ -24,8 +27,9 @@ defmodule TavoroMiniWmsWeb.InventoryControllerTest do
     setup [:create_inventory]
 
     test "renders error when quantity is < 0", %{conn: conn, inventory: inventory} do
-      conn = put(conn, ~p"/api/inventories/#{inventory.id}", inventory: %{quantity: -3})
-      assert json_response(conn, 400)["errors"] != %{}
+      conn = put(conn, ~p"/api/inventories/#{inventory.id}", inventory: @bad_attrs)
+      response = json_response(conn, 400)["error"]
+      assert response == "Quantity must be greater than or equal to 0"
     end
 
     test "renders inventory when data is valid", %{conn: conn, inventory: %Inventory{id: id} = inventory} do

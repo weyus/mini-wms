@@ -5,8 +5,6 @@ defmodule TavoroMiniWmsWeb.InventoryController do
 
   alias TavoroMiniWms.Repo
 
-  alias TavoroMiniWms.ErrorJSON
-
   action_fallback TavoroMiniWmsWeb.FallbackController
 
   import Ecto.Query
@@ -51,26 +49,29 @@ defmodule TavoroMiniWmsWeb.InventoryController do
 
   # How to lock DB when doing Repo.update()?
   def receive(conn, %{"id" => id, "inventory" => inventory_params}) do
-    handle_negative_quantity(conn, inventory_params["quantity"])
-
-    with {:ok, %Inventory{} = inventory} <- modify_inventory(conn, id, inventory_params)
+    with {:ok} <- handle_negative_quantity(inventory_params["quantity"])
     do
-      conn
-      |> put_status(:ok)
-      |> render(:show, inventory: inventory)
+      with {:ok, %Inventory{} = inventory} <- modify_inventory(conn, id, inventory_params)
+        do
+        conn
+        |> put_status(:ok)
+        |> render(:show, inventory: inventory)
+      else
+        _err ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "Attempt to receive inventory failed"})
+      end
     else
-      result -> conn
-                |> put_status(:bad_request)
-                |> render("error.json", %{errors: %{detail: "Error occurred updating inventory"}})
+      {:error, error_msg} ->
+      conn
+      |> put_status(:bad_request)
+      |> json(%{error: error_msg})
     end
   end
 
-  defp handle_negative_quantity(conn, quantity) do
-    if quantity <= 0 do
-      conn
-      |> put_status(:bad_request)
-      |> render("error.json", %{errors: %{detail: "Quantity must be greater than 0"}})
-    end
+  defp handle_negative_quantity(quantity) do
+     if quantity <= 0, do: {:error, "Quantity must be greater than or equal to 0"}, else: {:ok}
   end
 
   defp modify_inventory(conn, id, inventory_params) do
