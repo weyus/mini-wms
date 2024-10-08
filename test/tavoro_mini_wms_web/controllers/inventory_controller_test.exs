@@ -33,6 +33,15 @@ defmodule TavoroMiniWmsWeb.InventoryControllerTest do
       assert response == "Quantity must be greater than or equal to 0"
     end
 
+    test "renders error when inventory doesn't exist", %{conn: conn, inventory: inventory} do
+      %Inventory{id: inventory.id} |> Repo.delete
+
+      conn = put(conn, ~p"/api/inventories/receive/#{inventory.id}", inventory: @receive_attrs)
+
+      response = json_response(conn, 400)["error"]
+      assert response == "Inventory must exist"
+    end
+
     # What is the value of doing the pattern matching in the parameter here?
     test "renders inventory when data is valid", %{conn: conn, inventory: %Inventory{id: id} = inventory} do
       conn = put(conn, ~p"/api/inventories/receive/#{inventory}", inventory: @receive_attrs)

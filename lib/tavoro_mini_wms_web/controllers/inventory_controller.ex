@@ -47,18 +47,27 @@ defmodule TavoroMiniWmsWeb.InventoryController do
     end
   end
 
+  # This will receive a positive quantity of product into a location
+  #
+  # @param conn Phoenix connection
+  # @param params Map of: id, inventory
+  # @return updated inventory at the to location
   def receive(conn, %{"id" => id, "inventory" => inventory_params}) do
     with {:ok} <- handle_negative_quantity(inventory_params["quantity"])
     do
       inventory = Repo.get(Inventory, id)
-      with {:ok, inventory} <- modify_inventory(inventory, inventory_params["quantity"])
-        do
-        conn
-        |> put_status(:ok)
-        |> render(:show, inventory: inventory)
+      if inventory == nil do
+        handle_error(conn, "Inventory must exist")
       else
-        _err ->
-        handle_error(conn, "Attempt to receive inventory failed")
+        with {:ok, inventory} <- modify_inventory(inventory, inventory_params["quantity"])
+          do
+          conn
+          |> put_status(:ok)
+          |> render(:show, inventory: inventory)
+        else
+          _err ->
+          handle_error(conn, "Attempt to receive inventory failed")
+        end
       end
     else
       {:error, error_msg} ->
@@ -69,6 +78,17 @@ defmodule TavoroMiniWmsWeb.InventoryController do
   # This will transfer quantity of product from one location to another
   # If the from location has less than the requested quantity, it will transfer all that is available
   #
+  # Assumptions:
+  # 1. The from and to locations are different
+  # 2. The from location exists and has the product
+  # 3. The to location exists and has the product
+  #
+  # Potential improvements:
+  # 1. Allow for creation of a new to inventory record if it doesn't exist
+  # 2. Return both from and to inventory records in response to show that transfer was successful
+  #
+  # @param conn Phoenix connection
+  # @param params Map of: from_location_id, to_location_id, product_id, quantity
   # @return updated inventory at the to location
   def transfer(conn, %{"from_location_id" => from_location_id,
                        "to_location_id" => to_location_id,
@@ -100,25 +120,25 @@ defmodule TavoroMiniWmsWeb.InventoryController do
   end
 
   defp check_transfer_params(from_location_id, to_location_id, product_id, quantity) do
-    # WG - This could be better constructed,
-    # would prefer not to pull these just to find out that the location ids are not the same.
-    from_inventory = Repo.get_by(Inventory, location_id: from_location_id, product_id: product_id)
-    to_inventory = Repo.get_by(Inventory, location_id: to_location_id, product_id: product_id)
+    if from_location_id == to_location_id do
+      {:error, "From and to inventory locations must be different"}
+    else
+      from_inventory = Repo.get_by(Inventory, location_id: from_location_id, product_id: product_id)
+      to_inventory = Repo.get_by(Inventory, location_id: to_location_id, product_id: product_id)
 
-    cond do
-      from_inventory == nil ->
-        {:error, "Inventory must exist in the from location"}
-      to_inventory == nil ->
-        {:error, "Inventory must exist in the to location"}
-      from_location_id == to_location_id ->
-        {:error, "From and to inventory locations must be different"}
-      from_inventory.quantity == 0 ->
-        {:error, "From location must have inventory"}
-      # Normalize quantity if necessary - we can't take out more than is there
-      from_inventory.quantity < quantity ->
-        {:ok, from_inventory, to_inventory, from_inventory.quantity}
-      true ->
-        {:ok, from_inventory, to_inventory, quantity}
+      cond do
+        from_inventory == nil ->
+          {:error, "Inventory must exist in the from location"}
+        to_inventory == nil ->
+          {:error, "Inventory must exist in the to location"}
+        from_inventory.quantity == 0 ->
+          {:error, "From location must have inventory"}
+        # Normalize quantity if necessary - we can't take out more than is there
+        from_inventory.quantity < quantity ->
+          {:ok, from_inventory, to_inventory, from_inventory.quantity}
+        true ->
+          {:ok, from_inventory, to_inventory, quantity}
+      end
     end
   end
 
