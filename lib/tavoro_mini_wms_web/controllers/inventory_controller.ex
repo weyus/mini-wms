@@ -8,6 +8,7 @@ defmodule TavoroMiniWmsWeb.InventoryController do
   action_fallback TavoroMiniWmsWeb.FallbackController
 
   import Ecto.Query
+  import TavoroMiniWms.Utility
 
   def index(conn, _params) do
     inventories = from(l in Inventory) |> Repo.all()
@@ -156,11 +157,5 @@ defmodule TavoroMiniWmsWeb.InventoryController do
     |> Repo.update()
 
     {:ok, updated_inventory}
-  end
-
-  defp handle_error(conn, error_msg) do
-    conn
-    |> put_status(:bad_request)
-    |> json(%{error: error_msg})
   end
 end
