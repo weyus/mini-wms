@@ -10,18 +10,13 @@ defmodule TavoroMiniWmsWeb.OrderController do
 
   import Ecto.Query
   import TavoroMiniWms.Utility
-  import Enum
 
   def create(conn, %{"order" => order_params}) do
     with {:ok, %Order{} = order} <- Repo.transaction(fn ->
                                       Order.create_changeset(order_params) |> Repo.insert()
                                       |> case do
                                         {:ok, order} ->
-                                          # Skip lines with quantity <= 0
-                                          filter(order_params["lines"], fn line_params ->
-                                            line_params[:quantity] > 0
-                                          end)
-                                          |> Enum.map(fn line_params ->
+                                          Enum.map(order_params["lines"], fn line_params ->
                                                line_params |> Map.put("order_id", order.id)
                                              end)
                                           |> Enum.map(fn line_params ->
@@ -29,7 +24,7 @@ defmodule TavoroMiniWmsWeb.OrderController do
                                                |> Repo.insert()
                                              end)
                                           Repo.preload(order, :order_lines)
-                                        {:error, error_msg} -> error_msg
+                                        {:error, _} -> "Failed to create order"
                                       end
                                     end)
     do
@@ -37,8 +32,8 @@ defmodule TavoroMiniWmsWeb.OrderController do
       |> put_status(:created)
       |> put_resp_header("order", ~p"/api/orders/#{order}")
       |> render(:show, order: order)
-    else {:error, error_msg} ->
-      handle_error(conn, error_msg)
+    else
+      {_, error_msg} -> handle_error(conn, error_msg)
     end
   end
 
