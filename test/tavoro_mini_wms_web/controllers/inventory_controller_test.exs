@@ -6,7 +6,6 @@ defmodule TavoroMiniWmsWeb.InventoryControllerTest do
   alias TavoroMiniWms.Product
   alias TavoroMiniWms.Location
   alias TavoroMiniWms.Inventory
-
   alias TavoroMiniWms.Repo
 
   @create_attrs %{
@@ -119,13 +118,8 @@ defmodule TavoroMiniWmsWeb.InventoryControllerTest do
   end
 
   defp create_inventory(transfer) do
-    Repo.insert!(%Product{name: "some name", price: 120.5, sku: "12345"})
-    query = from p in Product, select: max(p.id)
-    product_id = Repo.one query
-
-    Repo.insert!(%Location{name: "some name"})
-    query = from l in Location, select: max(l.id)
-    location_id = Repo.one query
+    %Product{id: product_id} = Repo.insert!(%Product{name: "some name", price: 120.5, sku: "12345"})
+    %Location{id: location_id} = Repo.insert!(%Location{name: "some name"})
 
     updated_attrs = Map.put(@create_attrs, :product_id, product_id)
                     |> Map.put(:location_id, location_id)
@@ -135,9 +129,7 @@ defmodule TavoroMiniWmsWeb.InventoryControllerTest do
       |> Repo.insert!()
 
     inventory2 = if transfer do
-                   Repo.insert!(%Location{name: "some name 2"})
-                   query = from l in Location, select: max(l.id)
-                   location_id2 = Repo.one query
+                   %Location{id: location_id2} = Repo.insert!(%Location{name: "some name 2"})
 
                    updated_attrs = Map.put(@create_attrs, :product_id, product_id)
                                   |> Map.put(:location_id, location_id2)

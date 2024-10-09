@@ -3,6 +3,7 @@ defmodule TavoroMiniWms.Product do
   import Ecto.Changeset
 
   alias TavoroMiniWms.Inventory
+  alias TavoroMiniWms.OrderLine
 
   schema "products" do
     field :name, :string
@@ -12,6 +13,7 @@ defmodule TavoroMiniWms.Product do
     timestamps()
 
     has_many :inventories, Inventory
+    has_many :order_lines, OrderLine
   end
 
   def create_changeset(attrs) do

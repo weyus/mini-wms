@@ -38,6 +38,11 @@ defmodule TavoroMiniWmsWeb.Router do
     put "/inventories/transfer/:from_location_id/:to_location_id/:product_id/:quantity", InventoryController, :transfer
     post "/inventories", InventoryController, :create
     delete "/inventories/:id", InventoryController, :delete
+
+    post "/orders", OrderController, :create
+    get "/orders", OrderController, :index
+    get "/orders/:id", OrderController, :show
+    put "/orders/fulfill/:id", OrderController, :fulfill
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
