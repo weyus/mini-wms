@@ -41,7 +41,6 @@ defmodule TavoroMiniWmsWeb.InventoryControllerTest do
       assert response == "Inventory must exist"
     end
 
-    # What is the value of doing the pattern matching in the parameter here?
     test "renders inventory when data is valid", %{conn: conn, inventory: %Inventory{id: id} = inventory} do
       conn = put(conn, ~p"/api/inventories/receive/#{inventory}", inventory: @receive_attrs)
 
