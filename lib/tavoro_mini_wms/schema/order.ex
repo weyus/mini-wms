@@ -6,11 +6,12 @@ defmodule TavoroMiniWms.Order do
   alias TavoroMiniWms.OrderLine
 
   schema "orders" do
-    field :state, :string, default: "RECEIVED"
+    field :state, Ecto.Enum, values: [:RECEIVED, :PICKING, :PICKED, :PACKING, :PACKED, :SHIPPING, :SHIPPED], default: :RECEIVED
     field :customer_id, :integer
     field :customer_order_id, :string
     field :shipment_method, :string
     field :shipment_id, :integer
+    field :order_line_count, :integer, virtual: true
 
     timestamps(type: :utc_datetime)
 

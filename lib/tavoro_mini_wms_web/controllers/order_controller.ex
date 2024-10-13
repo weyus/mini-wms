@@ -11,6 +11,16 @@ defmodule TavoroMiniWmsWeb.OrderController do
   import Ecto.Query
   import TavoroMiniWms.Utility
 
+  def index(conn, _params) do
+    query = from o in Order,
+            left_join: ol in assoc(o, :order_lines),
+            group_by: o.id,
+            select_merge: %{order_line_count: count(ol.id)}
+    orders = Repo.all(query)
+
+    render(conn, :index, orders: orders)
+  end
+
   def create(conn, %{"order" => order_params}) do
     with {:ok, %Order{} = order} <- Repo.transaction(fn ->
                                       Order.create_changeset(order_params) |> Repo.insert()

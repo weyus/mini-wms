@@ -8,6 +8,28 @@ defmodule TavoroMiniWmsWeb.OrderControllerTest do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
+  describe "index" do
+    setup [:setup_attrs]
+
+    test "lists all orders if nothing is in the DB", %{conn: conn} do
+      conn = get(conn, ~p"/api/orders")
+      assert json_response(conn, 200)["data"] == []
+    end
+
+    test "show order line summaries on order list", %{conn: conn, create_attrs: create_attrs} do
+      # Create an order
+      conn = post(conn, ~p"/api/orders", order: create_attrs)
+
+      conn = get(conn, ~p"/api/orders")
+      response = json_response(conn, 200)["data"]
+      first_order = Enum.at(response, 0)
+
+      assert Enum.count(response) == 1
+      assert first_order["order_lines"] == nil
+      assert first_order["num_order_lines"] == 2
+    end
+  end
+
   describe "create" do
     setup [:setup_attrs]
 
