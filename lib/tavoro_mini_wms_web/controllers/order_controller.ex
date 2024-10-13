@@ -2,7 +2,6 @@ defmodule TavoroMiniWmsWeb.OrderController do
   use TavoroMiniWmsWeb, :controller
 
   alias TavoroMiniWms.Order
-  alias TavoroMiniWms.OrderLine
 
   alias TavoroMiniWms.Repo
 
@@ -22,21 +21,7 @@ defmodule TavoroMiniWmsWeb.OrderController do
   end
 
   def create(conn, %{"order" => order_params}) do
-    with {:ok, %Order{} = order} <- Repo.transaction(fn ->
-                                      Order.create_changeset(order_params) |> Repo.insert()
-                                      |> case do
-                                        {:ok, order} ->
-                                          Enum.map(order_params["lines"], fn line_params ->
-                                               line_params |> Map.put("order_id", order.id)
-                                             end)
-                                          |> Enum.map(fn line_params ->
-                                               OrderLine.create_changeset(line_params)
-                                               |> Repo.insert()
-                                             end)
-                                          Repo.preload(order, :order_lines)
-                                        {:error, _} -> "Failed to create order"
-                                      end
-                                    end)
+    with {:ok, %Order{} = order} <- Order.create_order(order_params)
     do
       conn
       |> put_status(:created)
@@ -51,6 +36,12 @@ defmodule TavoroMiniWmsWeb.OrderController do
     order = Order
             |> preload(:order_lines)
             |> Repo.get(id)
+    render(conn, :show, order: order)
+  end
+
+  def fulfill(conn, %{"id" => id}) do
+    order = Order.fulfill_order(id)
+
     render(conn, :show, order: order)
   end
 end
