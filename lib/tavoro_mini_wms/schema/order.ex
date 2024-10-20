@@ -4,6 +4,7 @@ defmodule TavoroMiniWms.Order do
   import Ecto.Changeset
 
   alias TavoroMiniWms.Repo
+  alias TavoroMiniWms.Inventory
   alias TavoroMiniWms.OrderLine
 
   import Ecto.Query
@@ -52,11 +53,37 @@ defmodule TavoroMiniWms.Order do
   end
 
   def fulfill_order(id) do
-    order = Order
-            |> preload(:order_lines)
-            |> Repo.get(id)
+    order = order_with_lines(id)
+    update_state(order, :PICKING)
 
+    order_line_statuses = Enum.reduce(order.order_lines, [], fn line, acc ->
+      with {:ok} <- Inventory.get_inventory_for_product(line.product_id, line.quantity)
+      do
+        [ {:ok} | acc ]
+      else {:error, msg} ->
+        [ msg | acc ]
+      end
+    end)
+
+    if Enum.all?(order_line_statuses, fn {:ok} -> true; _ -> false end) do
+      update_state(order, :PICKED)
+    else
+      msg = "Failed to fulfill order - insufficient inventory for one or more order lines\nDetails: "
+      order_line_status_errors = Enum.filter(order_line_statuses, fn {:error, _} -> true; _ -> false end)
+                                 |> Enum.map(fn {:error, msg} -> msg end)
+
+      {:error, Enum.join(msg, order_line_status_errors)}
+    end
+  end
+
+  def order_with_lines(id) do
+    __MODULE__
+    |> preload(:order_lines)
+    |> Repo.get(id)
+  end
+
+  defp update_state(order, state) do
     order
-    |> Ecto.Changeset.change(state: :PICKED)
+    |> Ecto.Changeset.change(state: state)
   end
 end

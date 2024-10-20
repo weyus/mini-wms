@@ -33,15 +33,16 @@ defmodule TavoroMiniWmsWeb.OrderController do
   end
 
   def show(conn, %{"id" => id}) do
-    order = Order
-            |> preload(:order_lines)
-            |> Repo.get(id)
-    render(conn, :show, order: order)
+    render(conn, :show, order: Order.order_with_lines(id))
   end
 
+  # For the purposes of the exercise, assuming fulfilling means picking
   def fulfill(conn, %{"id" => id}) do
-    order = Order.fulfill_order(id)
-
-    render(conn, :show, order: order)
+    with {:ok} <- Order.fulfill_order(id)
+    do
+      render(conn, :show, order: Repo.get(Order, id))
+    else {:error, error_msg} ->
+      handle_error(conn, error_msg)
+    end
   end
 end
