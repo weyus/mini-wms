@@ -29,6 +29,20 @@ defmodule TavoroMiniWmsWeb.Router do
     put "/locations/:id", LocationController, :update
     post "/locations", LocationController, :create
     delete "/locations/:id", LocationController, :delete
+
+    get "/inventories", InventoryController, :index
+    get "/inventories/:id", InventoryController, :show
+    put "/inventories/receive/:id", InventoryController, :receive
+
+    # WG: Just wanted to try it with request params instead of body params
+    put "/inventories/transfer/:from_location_id/:to_location_id/:product_id/:quantity", InventoryController, :transfer
+    post "/inventories", InventoryController, :create
+    delete "/inventories/:id", InventoryController, :delete
+
+    post "/orders", OrderController, :create
+    get "/orders", OrderController, :index
+    get "/orders/:id", OrderController, :show
+    put "/orders/fulfill/:id", OrderController, :fulfill
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
@@ -48,10 +62,10 @@ defmodule TavoroMiniWmsWeb.Router do
     end
   end
 
-  scope "/" do
-    forward "/", ReverseProxyPlug,
-      upstream: "http://localhost:5173",
-      error_callback: &TavoroMiniWmsWeb.reverse_proxy_error_callback/1,
-      response_mode: :buffer
-  end
+#  scope "/" do
+#    forward "/", ReverseProxyPlug,
+#      upstream: "http://localhost:5173",
+#      error_callback: &TavoroMiniWmsWeb.reverse_proxy_error_callback/1,
+#      response_mode: :buffer
+#  end
 end

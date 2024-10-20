@@ -1,0 +1,89 @@
+defmodule TavoroMiniWms.Order do
+  use Ecto.Schema
+
+  import Ecto.Changeset
+
+  alias TavoroMiniWms.Repo
+  alias TavoroMiniWms.Inventory
+  alias TavoroMiniWms.OrderLine
+
+  import Ecto.Query
+
+  schema "orders" do
+    field :state, Ecto.Enum, values: [:RECEIVED, :PICKING, :PICKED, :PACKING, :PACKED, :SHIPPING, :SHIPPED], default: :RECEIVED
+    field :customer_id, :integer
+    field :customer_order_id, :string
+    field :shipment_method, :string
+    field :shipment_id, :integer
+    field :order_line_count, :integer, virtual: true
+
+    timestamps(type: :utc_datetime)
+
+    has_many(:order_lines, OrderLine)
+  end
+
+  def create_changeset(attrs) do
+    %__MODULE__{}
+    |> changeset(attrs)
+  end
+
+  @doc false
+  def changeset(order, attrs) do
+    order
+    |> cast(attrs, [:customer_id, :customer_order_id, :state, :shipment_method, :shipment_id])
+    |> validate_required([:customer_id, :customer_order_id, :state])
+  end
+
+  def create_order(order_params) do
+    Repo.transaction(fn ->
+      create_changeset(order_params) |> Repo.insert()
+      |> case do
+           {:ok, order} ->
+             Enum.map(order_params["lines"], fn line_params ->
+               line_params |> Map.put("order_id", order.id)
+             end)
+             |> Enum.map(fn line_params ->
+               OrderLine.create_changeset(line_params)
+               |> Repo.insert()
+             end)
+             Repo.preload(order, :order_lines)
+           {:error, _} -> "Failed to create order"
+         end
+    end)
+  end
+
+  def fulfill_order(id) do
+    order = order_with_lines(id)
+    update_state(order, :PICKING)
+
+    order_line_statuses = Enum.reduce(order.order_lines, [], fn line, acc ->
+      with {:ok} <- Inventory.get_inventory_for_product(line.product_id, line.quantity)
+      do
+        [ {:ok} | acc ]
+      else {:error, msg} ->
+        [ msg | acc ]
+      end
+    end)
+
+    if Enum.all?(order_line_statuses, fn {:ok} -> true; _ -> false end) do
+      update_state(order, :PICKED)
+    else
+      msg = "Failed to fulfill order - insufficient inventory for one or more order lines\nDetails: "
+      order_line_status_errors = Enum.filter(order_line_statuses, fn {:error, _} -> true; _ -> false end)
+                                 |> Enum.map(fn {:error, msg} -> msg end)
+
+      {:error, Enum.join(msg, order_line_status_errors)}
+    end
+  end
+
+  def order_with_lines(id) do
+    __MODULE__
+    |> preload(:order_lines)
+    |> Repo.get(id)
+  end
+
+  defp update_state(order, state) do
+    order
+    |> Ecto.Changeset.change(state: state)
+  end
+end
