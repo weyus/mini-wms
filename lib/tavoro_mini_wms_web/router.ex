@@ -42,7 +42,7 @@ defmodule TavoroMiniWmsWeb.Router do
     post "/orders", OrderController, :create
     get "/orders", OrderController, :index
     get "/orders/:id", OrderController, :show
-    put "/orders/fulfill/:id", OrderController, :fulfill
+    put "/orders/:id/fulfill", OrderController, :fulfill
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

@@ -63,6 +63,53 @@ defmodule TavoroMiniWmsWeb.OrderControllerTest do
     end
   end
 
+  # Unfinished fulfill tests
+  describe "fulfill" do
+    setup [:setup_attrs]
+
+    @tag :skip
+    test "changes order status from RECEIVED to PICKED when fulfill is successful", %{conn: conn, create_attrs: create_attrs} do
+      conn = post(conn, ~p"/api/orders", order: create_attrs)
+      assert %{"id" => id} = json_response(conn, 201)["data"]
+
+      conn = post(conn, ~p"/api/orders/#{id}/fulfill")
+      response = json_response(conn, 200)["data"]
+      assert response["state"] == "PICKED"
+    end
+
+    @tag :skip
+    test "successfully decreases inventory for all order lines", %{conn: conn, create_attrs: create_attrs} do
+      conn = post(conn, ~p"/api/orders", order: create_attrs)
+      assert %{"id" => id} = json_response(conn, 201)["data"]
+
+      conn = post(conn, ~p"/api/orders/#{id}/fulfill")
+      response = json_response(conn, 200)["data"]
+
+      # Fix these assertions
+      assert Enum.all?(response["order_lines"], fn line ->
+        line["quantity"] == 0
+      end)
+    end
+
+    @tag :skip
+    test "returns an error if not all order lines can be fulfilled", %{conn: conn, create_attrs: create_attrs} do
+      conn = post(conn, ~p"/api/orders", order: create_attrs)
+      assert %{"id" => id} = json_response(conn, 201)["data"]
+
+      conn = post(conn, ~p"/api/orders/#{id}/fulfill")
+      response = json_response(conn, 200)["data"]
+
+      # Fix these assertions
+      assert Enum.all?(response["order_lines"], fn line ->
+        line["quantity"] == 0
+      end)
+    end
+
+    @tag :skip
+    test "doesn't allow two order fulfills to cause double inventory reduction", %{conn: conn, create_attrs: create_attrs} do
+    end
+  end
+
   defp setup_attrs(_) do
     %Product{id: product_id1} = Repo.insert!(%Product{name: "some name", price: 120.5, sku: "12345"})
     %Product{id: product_id2} = Repo.insert!(%Product{name: "some other name", price: 999.99, sku: "X2C4B"})

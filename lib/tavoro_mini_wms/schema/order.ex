@@ -52,6 +52,8 @@ defmodule TavoroMiniWms.Order do
     end)
   end
 
+  # Potential enhancement: Allow for partially fulfilled orders that stay in :PICKING state
+  # by allowing for :PICKING AND :PICKED states at the order line level
   def fulfill_order(id) do
     order = order_with_lines(id)
     update_state(order, :PICKING)
