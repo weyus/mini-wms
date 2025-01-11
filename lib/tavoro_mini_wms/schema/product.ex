@@ -2,12 +2,18 @@ defmodule TavoroMiniWms.Product do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias TavoroMiniWms.Inventory
+  alias TavoroMiniWms.OrderLine
+
   schema "products" do
     field :name, :string
     field :sku, :string
     field :price, :decimal
 
     timestamps()
+
+    has_many :inventories, Inventory
+    has_many :order_lines, OrderLine
   end
 
   def create_changeset(attrs) do
